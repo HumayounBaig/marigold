@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 43123 -H 0.0.0.0",
+    "dev": "node api.js && next dev -p 43123 -H 0.0.0.0",
     "build": "next build",
-    "start": "next start -p 43123 -H 0.0.0.0",
+    "start": "node api.js && next start -p 43123 -H 0.0.0.0",
     "lint": "eslint",
     "test": "tsx --test src/lib/recovery.test.ts",
     "typecheck": "tsc --noEmit"
