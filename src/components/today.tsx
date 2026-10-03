@@ -44,7 +44,6 @@ export function Today() {
   const plan = store.plans[date];
   return (
     <TodayBody
-      key={saved?.id ?? "new"}
       initial={saved ?? blankCheckIn(date, profile.concerns)}
       existingPlan={plan}
       profileName={profile.name}
@@ -137,7 +136,7 @@ function TodayBody({
             <CardContent className="grid gap-6">
               <div className="grid gap-2">
                 <Label>Sleep last night, roughly</Label>
-                <NumberScale label="Hours of sleep" max={12} value={checkIn.sleepHours} onChange={(sleepHours) => patch({ sleepHours })} />
+                <NumberScale label="Hours of sleep" max={12} columns={7} value={checkIn.sleepHours} onChange={(sleepHours) => patch({ sleepHours })} />
               </div>
               <div className="grid gap-2">
                 <Label>Energy</Label>
@@ -357,7 +356,7 @@ function TodayBody({
               {plan.source === "model"
                 ? `Note written on this computer by ${plan.model ?? "the local model"}. Apache-2.0 weights via Ollama. This check-in was not sent to a cloud model.`
                 : "Ollama did not answer, so the same safety catalog chose the plan. The check-in still never left this computer."}
-              {plan.adjusted ? " A few suggestions were put back inside the safe list." : ""}
+              {plan.adjusted ? " Where the model wandered outside the catalog or the house rules, those lines were replaced." : ""}
             </p>
           </div>
         )}

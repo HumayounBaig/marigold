@@ -164,10 +164,6 @@ export function Settings() {
         </Button>
       </section>
 
-      {profile.partnerNote ? (
-        <blockquote className="border-l-2 border-marigold pl-4 text-sm leading-6 text-muted-foreground">{profile.partnerNote}</blockquote>
-      ) : null}
-
       <section className="flex flex-wrap gap-2">
         <Button type="button" variant="outline" className="h-11 rounded-full px-5" onClick={download}>
           Download her notes

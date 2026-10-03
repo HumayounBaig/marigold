@@ -209,7 +209,7 @@ export const MOVEMENTS: Movement[] = [
     needsSteadyBleeding: false,
     loadsCore: true,
     avoidIfHeaviness: true,
-    maxPain: { abdomen: 3, incision: 2, pelvis: 3 },
+    maxPain: { abdomen: 3, incision: 1, pelvis: 3 },
     helps: ["abdomen", "low-back"],
     summary: "A first reconnection of the deep belly, with the heel sliding only as far as the midline stays smooth.",
     steps: [
@@ -325,7 +325,7 @@ export const MOVEMENTS: Movement[] = [
     needsSteadyBleeding: true,
     loadsCore: true,
     avoidIfHeaviness: true,
-    maxPain: { pelvis: 3, "low-back": 4, incision: 2 },
+    maxPain: { pelvis: 3, "low-back": 4, incision: 1 },
     helps: ["low-back", "hips"],
     summary: "Standing up from a chair with both legs sharing the work. Hands on your thighs are allowed.",
     steps: [
@@ -371,7 +371,7 @@ export const MOVEMENTS: Movement[] = [
     needsSteadyBleeding: true,
     loadsCore: true,
     avoidIfHeaviness: true,
-    maxPain: { pelvis: 2, "low-back": 4, incision: 2 },
+    maxPain: { pelvis: 2, "low-back": 4, incision: 1 },
     helps: ["hips", "low-back"],
     summary: "Sit toward a chair and stand back up, only as deep as the pelvis stays comfortable.",
     steps: [

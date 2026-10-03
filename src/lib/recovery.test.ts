@@ -148,6 +148,60 @@ test("model cannot assign an unsafe movement or calorie talk", () => {
   assert.equal(merged.source, "model");
 });
 
+test("a snack cannot replace the main meal", () => {
+  const input = {
+    profile: profile({ feeding: "nursing" }),
+    checkIn: checkIn(),
+    now: NOW,
+  };
+  const base = buildRulesPlan(input);
+  const allowed = allowedFor(input);
+  const breakfast = allowed.meals.find((item) => item.slot === "breakfast");
+  const snacks = allowed.meals.filter((item) => item.slot === "snack");
+  const merged = mergeModelOutput(
+    JSON.stringify({
+      greeting: "Elena, four hours would have been kinder, and the back is asking for a short day.",
+      movementId: base.movementId,
+      mealIds: [breakfast!.id, snacks[0].id, snacks[1].id],
+      sootheIds: base.sootheIds,
+      restNote: base.restNote,
+      whyToday: base.whyToday,
+    }),
+    base,
+    allowed,
+    "Elena",
+  );
+  assert.deepEqual(merged.mealIds, base.mealIds);
+  assert.equal(merged.adjusted, true);
+  assert.ok(merged.mealIds.some((id) => mealById(id)?.slot === "main"));
+});
+
+test("the explanation names the session she will actually do", () => {
+  const input = {
+    profile: profile({ birthDate: "2026-07-11", cleared: true, feeding: "formula" }),
+    checkIn: checkIn({ pain: {}, energy: 4, sleepHours: 7, minutes: 20 }),
+    now: NOW,
+  };
+  const base = buildRulesPlan(input);
+  const allowed = allowedFor(input);
+  const merged = mergeModelOutput(
+    JSON.stringify({
+      greeting: "Elena, the day has enough sleep for a small session and nothing hurts.",
+      movementId: "breath-5",
+      mealIds: base.mealIds,
+      sootheIds: base.sootheIds,
+      restNote: "Lie down for twenty minutes after you finish.",
+      whyToday: "Heel slides are the plan, whatever the card says.",
+    }),
+    base,
+    allowed,
+    "Elena",
+  );
+  const title = movementById(merged.movementId)?.title ?? "";
+  assert.match(merged.whyToday, new RegExp(title, "i"));
+  assert.doesNotMatch(merged.whyToday, /heel slides/i);
+});
+
 test("model may choose among safe ids", () => {
   const input = {
     profile: profile({ birthDate: "2026-07-11", cleared: true, feeding: "formula" }),

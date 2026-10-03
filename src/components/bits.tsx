@@ -24,14 +24,16 @@ export function NumberScale({
   max = 10,
   onChange,
   label,
+  columns,
 }: {
   value: number;
   max?: number;
   onChange: (value: number) => void;
   label: string;
+  columns?: number;
 }) {
   return (
-    <div className="flex flex-wrap gap-1" role="group" aria-label={label}>
+    <div className={columns ? "grid gap-1" : "flex flex-wrap gap-1"} style={columns ? { gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` } : undefined} role="group" aria-label={label}>
       {Array.from({ length: max + 1 }, (_, number) => (
         <button
           key={number}

@@ -494,19 +494,24 @@ export function extractJson(text: string): unknown {
   return JSON.parse(text.slice(start, end + 1));
 }
 
-function cleanProse(value: unknown, max: number): string | null {
+function cleanProse(value: unknown, max: number, mustInclude?: string): string | null {
   if (typeof value !== "string") return null;
   const text = value.replace(/\s+/g, " ").trim();
   if (text.length < 12 || text.length > max) return null;
+  if (/[!?]/.test(text)) return null;
+  if (mustInclude && mustInclude.trim().length > 1 && !text.toLowerCase().includes(mustInclude.trim().toLowerCase())) return null;
   if (UNSAFE_OUTPUT.test(text)) return null;
+  if (/\b(i recommend|navigating|journey|we(?:'|’)ll|let's|lets|let your body|prioritize|mama|warrior|you(?:'|’)ve got this|mindful|take your time|it(?:'|’)s okay|focus on)\b/i.test(text)) {
+    return null;
+  }
   return text;
 }
 
-export function mergeModelOutput(text: string, base: DayPlan, allowed: Allowed): DayPlan {
+export function mergeModelOutput(text: string, base: DayPlan, allowed: Allowed, name?: string): DayPlan {
   const parsed = asRecord(extractJson(text));
   if (!parsed) throw new Error("Model JSON was empty.");
   let adjusted = false;
-  const greeting = cleanProse(parsed.greeting, 420) ?? base.greeting;
+  const greeting = cleanProse(parsed.greeting, 420, name) ?? base.greeting;
   if (greeting === base.greeting && typeof parsed.greeting === "string") adjusted = true;
   const restNote = cleanProse(parsed.restNote, 320) ?? base.restNote;
   if (restNote === base.restNote && typeof parsed.restNote === "string") adjusted = true;
@@ -529,11 +534,12 @@ export function mergeModelOutput(text: string, base: DayPlan, allowed: Allowed):
   const requestedMeals = Array.isArray(parsed.mealIds) ? parsed.mealIds.filter((id): id is string => typeof id === "string") : [];
   const validMeals = requestedMeals.filter((id) => mealIdsAllowed.has(id));
   const uniqueMeals = [...new Set(validMeals)];
-  const breakfastOk = uniqueMeals.some((id) => mealById(id)?.slot === "breakfast");
-  const snackOk = !allowed.snackRequired || uniqueMeals.some((id) => mealById(id)?.slot === "snack");
-  const mains = uniqueMeals.filter((id) => mealById(id)?.slot === "main");
+  const countSlot = (slot: "breakfast" | "main" | "snack") => uniqueMeals.filter((id) => mealById(id)?.slot === slot).length;
+  const mealsOk = allowed.snackRequired
+    ? countSlot("breakfast") === 1 && countSlot("main") === 1 && countSlot("snack") === 1
+    : countSlot("breakfast") === 1 && countSlot("main") === 2 && countSlot("snack") === 0;
   let mealIds = base.mealIds;
-  if (uniqueMeals.length === 3 && breakfastOk && snackOk && (allowed.snackRequired || mains.length >= 1)) {
+  if (uniqueMeals.length === 3 && mealsOk) {
     mealIds = uniqueMeals;
   } else if (requestedMeals.length) {
     adjusted = true;
@@ -547,11 +553,24 @@ export function mergeModelOutput(text: string, base: DayPlan, allowed: Allowed):
   const finalSoothe = sootheIds.length === 2 ? sootheIds : base.sootheIds;
   if (sootheIds.length !== 2 && requestedSoothe.length) adjusted = true;
 
+  let alignedWhy = whyToday;
+  const chosen = movementById(movementId);
+  if (chosen && !alignedWhy.toLowerCase().includes(chosen.title.toLowerCase())) {
+    const mealNames = mealIds
+      .map((id) => mealById(id)?.title)
+      .filter((title): title is string => Boolean(title))
+      .join(", ");
+    alignedWhy = mealNames
+      ? `${chosen.title} is the session that stays inside today's limits. ${mealNames} keep the day fed.`
+      : `${chosen.title} is the session that stays inside today's limits.`;
+    adjusted = true;
+  }
+
   return {
     ...base,
     greeting,
     restNote,
-    whyToday,
+    whyToday: alignedWhy,
     movementId,
     mealIds,
     sootheIds: finalSoothe,
@@ -570,7 +589,7 @@ export async function createPlan(
   const allowed = allowedFor(input);
   try {
     const text = await generate(systemPrompt(), userPrompt(input, allowed));
-    const merged = mergeModelOutput(text, base, allowed);
+    const merged = mergeModelOutput(text, base, allowed, input.profile.name);
     return { ...merged, model: modelName ?? "qwen2.5:3b", modelError: null };
   } catch (error) {
     const message = error instanceof Error ? error.message : "The local model did not answer.";
